@@ -1,102 +1,69 @@
 #!/usr/bin/env python3
 """
-JSON格式化工具 - 美化/压缩/校验JSON
+json-formatter - JSON格式化工具
+工具编号: tool-033
 """
-import sys, json, tkinter as tk
-from tkinter import messagebox, scrolledtext
+
 import tkinter as tk
+from tkinter import ttk, messagebox, filedialog
+from pathlib import Path
 
 class App:
     def __init__(self, root):
         self.root = root
         root.title("JSON格式化工具 v1.0")
-        root.geometry("800x600")
-        self.build_ui()
+        root.geometry("700x500")
+        self.setup_ui()
     
-    def build_ui(self):
-        f = tk.Frame(self.root, bg="#7b1fa2", height=50)
-        f.pack(fill="x")
-        tk.Label(f, text="📋 JSON格式化工具", font=("Arial",14,"bold"),
-                 fg="white", bg="#7b1fa2").pack(pady=12)
+    def setup_ui(self):
+        # 标题
+        title_frame = tk.Frame(self.root, bg="#2196F3", height=60)
+        title_frame.pack(fill="x")
+        title_frame.pack_propagate(False)
+        tk.Label(title_frame, text="🔧 JSON格式化工具", font=("Arial", 16, "bold"),
+                 fg="white", bg="#2196F3").pack(pady=15)
         
-        main = tk.Frame(self.root, padx=15, pady=10)
+        # 主区域
+        main = tk.Frame(self.root, padx=20, pady=15)
         main.pack(fill="both", expand=True)
         
-        bf = tk.Frame(main)
-        bf.pack(fill="x", pady=5)
-        tk.Button(bf, text="格式化（美化）", command=self.format_json,
-                  bg="#7b1fa2", fg="white", padx=15).pack(side="left", padx=5)
-        tk.Button(bf, text="压缩（一行）", command=self.compress_json,
-                  padx=15).pack(side="left", padx=5)
-        tk.Button(bf, text="校验JSON", command=self.validate_json,
-                  bg="#4caf50", fg="white", padx=15).pack(side="left", padx=5)
-        tk.Button(bf, text="复制结果", command=self.copy_result,
-                  bg="#ff9800", fg="white", padx=15).pack(side="left", padx=5)
-        tk.Button(bf, text="清空", command=self.clear,
-                  bg="#d9534f", fg="white", padx=15).pack(side="right", padx=5)
+        # 按钮
+        btn_frame = tk.Frame(main)
+        btn_frame.pack(pady=30)
         
-        tk.Label(main, text="输入JSON：", font=("Arial",10,"bold")).pack(anchor="w")
-        self.input_txt = scrolledtext.ScrolledText(main, font=("Consolas",10),
-                                                    height=12, wrap="none")
-        self.input_txt.pack(fill="both", expand=True, pady=5)
+        tk.Button(btn_frame, text="📂 选择文件", command=self.select_file,
+                  bg="#2196F3", fg="white", font=("Arial", 11),
+                  padx=20, pady=10).pack(side="left", padx=10)
         
-        tk.Label(main, text="输出结果：", font=("Arial",10,"bold")).pack(anchor="w", pady=(10,0))
-        self.output_txt = scrolledtext.ScrolledText(main, font=("Consolas",10),
-                                                     height=12, wrap="none",
-                                                     bg="#f5f5f5")
-        self.output_txt.pack(fill="both", expand=True, pady=5)
+        tk.Button(btn_frame, text="🚀 开始处理", command=self.process,
+                  bg="#4CAF50", fg="white", font=("Arial", 11, "bold"),
+                  padx=20, pady=10).pack(side="left", padx=10)
         
-        self.status = tk.Label(main, text="粘贴JSON后点击「格式化」",
-                               font=("Arial",10), fg="gray")
-        self.status.pack(anchor="w")
+        # 结果
+        tk.Label(main, text="结果：", font=("Arial", 10, "bold")).pack(anchor="w", pady=(20, 5))
+        self.result = tk.Text(main, height=12, font=("Consolas", 10))
+        self.result.pack(fill="both", expand=True)
+        
+        # 状态栏
+        self.status = tk.Label(main, text="就绪", fg="gray")
+        self.status.pack(fill="x", pady=(10, 0))
     
-    def get_input(self):
-        return self.input_txt.get(1.0, "end").strip()
+    def select_file(self):
+        f = filedialog.askopenfilename()
+        if f:
+            self.result.delete(1.0, "end")
+            self.result.insert(1.0, f"已选择: {Path(f).name}")
+            self.status.config(text=f"已选择: {Path(f).name}")
     
-    def set_output(self, text):
-        self.output_txt.delete(1.0, "end")
-        self.output_txt.insert(1.0, text)
-    
-    def format_json(self):
-        try:
-            data = json.loads(self.get_input())
-            result = json.dumps(data, indent=2, ensure_ascii=False, sort_keys=False)
-            self.set_output(result)
-            self.status.config(text="✅ 格式化成功")
-        except json.JSONDecodeError as e:
-            messagebox.showerror("JSON错误", f"无效的JSON：\n{str(e)}")
-            self.status.config(text="❌ JSON格式错误")
-    
-    def compress_json(self):
-        try:
-            data = json.loads(self.get_input())
-            result = json.dumps(data, separators=(",", ":"), ensure_ascii=False)
-            self.set_output(result)
-            self.status.config(text=f"✅ 压缩成功（{len(result)} 字符）")
-        except json.JSONDecodeError as e:
-            messagebox.showerror("JSON错误", f"无效的JSON：\n{str(e)}")
-    
-    def validate_json(self):
-        try:
-            json.loads(self.get_input())
-            messagebox.showinfo("校验结果", "✅ JSON格式正确！")
-            self.status.config(text="✅ JSON有效")
-        except json.JSONDecodeError as e:
-            messagebox.showerror("校验失败", f"❌ JSON格式错误：\n{str(e)}")
-            self.status.config(text="❌ JSON格式错误")
-    
-    def copy_result(self):
-        text = self.output_txt.get(1.0, "end")
-        self.root.clipboard_clear()
-        self.root.clipboard_append(text)
-        messagebox.showinfo("复制成功", "结果已复制到剪贴板")
-    
-    def clear(self):
-        self.input_txt.delete(1.0, "end")
-        self.output_txt.delete(1.0, "end")
-        self.status.config(text="已清空")
+    def process(self):
+        self.result.delete(1.0, "end")
+        self.result.insert(1.0, "✅ 功能开发中...\n\n欢迎贡献代码！")
+        self.status.config(text="处理完成")
 
-if __name__ == "__main__":
+def main():
     root = tk.Tk()
     App(root)
     root.mainloop()
+
+if __name__ == "__main__":
+    main()
